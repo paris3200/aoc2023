@@ -13,46 +13,66 @@ const NUMBERS = {
   nine: "9",
 };
 
-const parseInput = (rawInput: string) => {
+const splitLines = (rawInput: string) => {
   return rawInput.split("\n");
 };
 
-function isNumeric(str: string): boolean {
-  return !isNaN(str) && !isNaN(parseFloat(str));
+function isNumeric(char: string): boolean {
+  return !isNaN(parseInt(char, 10));
 }
 
 function parseLine(line: string): number {
-  let firstDigit = null;
-  let lastDigit = null;
-  const inputArray = Array.from(line);
+  let firstDigit: string | null = null;
+  let lastDigit: string | null = null;
 
-  for (let x = 0; x < inputArray.length; x++) {
-    let numeric = null;
-    if (isNumeric(inputArray[x])) {
-      numeric = inputArray[x];
-
+  for (let char of line) {
+    if (isNumeric(char)) {
       if (firstDigit === null) {
-        firstDigit = numeric;
+        firstDigit = char;
       }
-
-      lastDigit = numeric;
+      lastDigit = char;
     }
   }
 
-  if (firstDigit != null) {
-    let combined = firstDigit + lastDigit;
-    return +combined;
+  if (firstDigit !== null && lastDigit !== null) {
+    return parseInt(firstDigit + lastDigit, 10);
   }
 
   return 0;
 }
 
-function convertLine(line: string): string {
-  let convertedLine = line;
-  for (const key in NUMBERS) {
-    convertedLine = convertedLine.replace(key, NUMBERS[key]);
+function calibrationWords(line: string): number {
+  const calibrationDigits: { [key: number]: number } = {};
+
+  for (let x = 0; x < line.length; x++) {
+    if (isNumeric(line[x])) {
+      calibrationDigits[x] = parseInt(line[x], 10);
+    }
   }
-  return convertedLine;
+
+  for (const key in NUMBERS) {
+    const numKey = key as keyof typeof NUMBERS;
+    let firstIndex = line.indexOf(numKey);
+
+    if (firstIndex != -1) {
+      calibrationDigits[firstIndex] = parseInt(NUMBERS[numKey], 10);
+    }
+
+    const lastIndex = line.lastIndexOf(numKey);
+    if (lastIndex != -1 && lastIndex != firstIndex) {
+      calibrationDigits[lastIndex] = parseInt(NUMBERS[numKey], 10);
+    }
+  }
+
+  const sortedKeys = Object.keys(calibrationDigits)
+    .map(Number)
+    .sort((a, b) => a - b);
+  if (sortedKeys.length === 0) return 0;
+
+  const firstDigit = calibrationDigits[sortedKeys[0]];
+  const lastDigit = calibrationDigits[sortedKeys[sortedKeys.length - 1]];
+
+  return parseInt(String(firstDigit) + String(lastDigit), 10);
 }
 
 function sumLines(lines: string[]): number {
@@ -60,25 +80,22 @@ function sumLines(lines: string[]): number {
   for (let x = 0; x < lines.length; x++) {
     sum += parseLine(lines[x]);
   }
-
   return sum;
 }
 
 const part1 = (rawInput: string) => {
-  const lines = parseInput(rawInput);
-
+  const lines = splitLines(rawInput);
   return sumLines(lines);
 };
 
 const part2 = (rawInput: string) => {
-  const input = parseInput(rawInput);
-  let convertedLines: string[] = [];
+  const input = splitLines(rawInput);
+  let sums: number[] = [];
 
   for (let x = 0; x < input.length; x++) {
-    convertedLines.push(convertLine(input[x]));
+    sums.push(calibrationWords(input[x]));
   }
-
-  return sumLines(convertedLines);
+  return sums.reduce((partialSum, a) => partialSum + a, 0);
 };
 
 run({
